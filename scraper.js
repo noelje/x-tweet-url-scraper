@@ -1,25 +1,11 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
-const readline = require('readline');
+const ProgressBar = require('progress');
 
 // function to read urls from a file
 function readUrlsFromFile(filePath) {
     return fs.readFileSync(filePath, 'utf8').split('\n').filter(Boolean);
 }
-
-// // function to prompt user for tweet URL
-// async function promptUser() {
-//     const rl = readline.createInterface({
-//         input: process.stdin,
-//         output: process.stdout
-//     });
-//     return new Promise(resolve => {
-//         rl.question('Enter the URL of the tweet/post: ', url => {
-//             rl.close();
-//             resolve(url);
-//         });
-//     });
-// }
 
 async function scrapeTweet(url) {
     const browser = await puppeteer.launch({ headless: true });
@@ -28,7 +14,7 @@ async function scrapeTweet(url) {
     // Extract tweet data
     const tweetData = await page.evaluate(() => {
         const contentElement = document.querySelector('div[data-testid="tweetText"]');
-        const tweetContent = contentElement ? contentElement.textContent : "No content";
+        const tweetContent = contentElement ? contentElement.textContent : `Couldn't find tweet content at ${url}`;
         const userNameElement = document.querySelector('div[data-testid="User-Name"]');
         const userName = userNameElement ? userNameElement.textContent : "Unknown user";
         return {
@@ -38,9 +24,9 @@ async function scrapeTweet(url) {
     });
     // Format content for Markdown with indentation
     const indentedContent = tweetData.content.split('\n').map(line => `\t${line}`).join('\n');
-    const formattedContent = `-\n${tweetData.userName}:\n\n${indentedContent}\n-`;
+    const formattedContent = `\n${tweetData.userName}:\n\n${indentedContent}\n`;
     await browser.close();
-    console.log(formattedContent);
+    // console.log(formattedContent);
     return formattedContent;
 }
 
@@ -51,6 +37,7 @@ async function main() {
         process.exit(1);
     }
     const urls = readUrlsFromFile(urlsFilePath);
+    const bar = new ProgressBar('Scraping tweets [:bar] :current/:total', { total: urls.length, width: 40 });
     for (const url of urls) {
         try {
             const content = await scrapeTweet(url);
@@ -58,7 +45,7 @@ async function main() {
         } catch (error) {
             console.error(`Error scraping tweet at ${url}: ${error.message}`);
         }
+        bar.tick();
     }
 }
 main().catch(console.error);
-// scrapeTweet().catch(console.error);
