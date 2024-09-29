@@ -1,4 +1,4 @@
-# x-tweet-scraper
+# x-tweet-url-scraper
 
 A Node.js script to scrape tweets from a list of URLs and save the content to a Markdown file. This script uses Puppeteer for web scraping and displays a progress bar during the scraping process.
 
